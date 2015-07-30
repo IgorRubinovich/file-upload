@@ -210,6 +210,15 @@ Example:
       },
       
       /**
+       * `fields` form fields to be added to the posted file. The for
+      */
+      fields: {
+        type: Object,
+        value: {},
+		notify : true
+      },
+      
+      /**
        * `_hiddenDropText` indicates whether or not the drop text should be shown
       */
       _hiddenDropText: {
@@ -357,6 +366,15 @@ Example:
       var prefix = "files." + self.files.indexOf(file);
       
       var formData = new FormData();
+
+	  var that = this;
+	  
+	  console.log('will upload with fields', JSON.stringify(this.fields));
+	  
+      Object.keys(this.fields).forEach(function(f) {
+		formData.append(f, that.fields[f]);
+      })
+	  
       formData.append("file", file, file.name);
       
       var xhr = file.xhr = new XMLHttpRequest();
