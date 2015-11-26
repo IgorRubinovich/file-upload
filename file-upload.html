@@ -86,13 +86,13 @@ Example:
   
   <template>
     <div>
-      <paper-button id="button" icon="file-upload" class="blue" on-click="_fileClick">
+      <paper-button id="button" icon="file-upload" hidden$="{{ hideContent }}" class="blue" on-click="_fileClick">
         <content></content>
       </paper-button>
       <div id='UploadBorder'>
         <div id="dropArea" hidden$="{{_hiddenDropText}}">{{dropText}}</div>
         <template is="dom-repeat" items="{{files}}">
-          <div class="file">
+          <div hidden$={{item.done}} class="file">
             <div class="name">
               <span>{{item.name}}</span>
               <div class="commands">
@@ -224,8 +224,31 @@ Example:
       _hiddenDropText: {
         type: Boolean,
         value: true
-      }
-    },
+      },
+	  
+	  /** 
+		* `dropZone` target element that will accept the drops, defaults to this
+		*/
+	  dropZone: {
+		type : Object,
+		value : null
+	  },
+	  
+	  /** 
+		* Time after which a progress bar that completed or completely failed will disappear. Set to negative to disable (default).
+		*/	  
+      progressTimeout : {
+        type : Number,
+        value : -1
+      },
+	  
+      /** 
+	    * Set to true to hide the lightDom content of the control. Defaults to false.
+       */	
+      hideContent : {	
+	    type : Boolean
+      },
+	},
     
     /**
      * Clears the list of files
@@ -251,22 +274,24 @@ Example:
     /**
      * A function to set up a drop area for drag-and-drop file uploads
     */
-    setupDrop: function() {
-      var uploadBorder = this.$.UploadBorder;
-      this.toggleClass("enabled", true, uploadBorder);
+    setupDrop: function(dropZone) {
+      var 	uploadBorder = this.$.UploadBorder,
+			dropZone = dropZone || this;
+	  
+      dropZone.toggleClass("enabled", true, uploadBorder);
       
-      this.ondragover = function(e) {
+      dropZone.ondragover = function(e) {
         e.stopPropagation();
         this.toggleClass("hover", true, uploadBorder);
         return false;
-      }
+      }.bind(this);
       
-      this.ondragleave = function() {
+      dropZone.ondragleave = function() {
         this.toggleClass("hover", false, uploadBorder);
         return false;
-      }
+      }.bind(this);
       
-      this.ondrop = function(event){
+      dropZone.ondrop = function(event){
         this.toggleClass("hover", false, uploadBorder);
         event.preventDefault();
         var length = event.dataTransfer.files.length;
@@ -278,7 +303,7 @@ Example:
           this.push("files", file);
           this.uploadFile(file);
         }
-      }
+      }.bind(this);
     },
     
     /**
@@ -390,14 +415,22 @@ Example:
         if(xhr.status === 200) {
           self.fire('success', {xhr:xhr});
           self.set(prefix + ".complete", true);
+		  console.log(prefix, " is complete");
         }
         else {
           self.set(prefix + ".error", true);
           self.set(prefix + ".complete", false);
           self.set(prefix + ".progress", 100);
+		  		  
           self.updateStyles();
           self.fire('error', {xhr:xhr});
         }
+		
+        if(self.progressTimeout >= 0)
+          setTimeout(function() {
+          self.set(prefix + ".done", true);
+        }, self.progressTimeout);
+
       };
       xhr.send(formData);
     }
