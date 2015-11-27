@@ -17,11 +17,11 @@ Example:
 
 <link rel="import" href="../paper-button/paper-button.html">
 <link rel="import" href="../paper-progress/paper-progress.html">
-  <link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
 
 <dom-module id="file-upload">
 
-  <style type="text/css">
+  <style is="custom-style">
     .enabled {
       border: 1px dashed #555;
     }
@@ -38,6 +38,8 @@ Example:
       max-height: 300px;
       overflow-y: auto;
       display: inline-block;
+	  
+	  @apply(--upload-border-style);
     }
     
     #dropArea {
@@ -86,7 +88,7 @@ Example:
   
   <template>
     <div>
-      <paper-button id="button" icon="file-upload" hidden$="{{ hideContent }}" class="blue" on-click="_fileClick">
+      <paper-button id="button" icon="file-upload" class="blue" on-click="_fileClick">
         <content></content>
       </paper-button>
       <div id='UploadBorder'>
@@ -182,7 +184,8 @@ Example:
       */
       files: {
         type: Array,
-        value: []
+        value: [],
+		notify : true
       },
       
       /**
@@ -429,6 +432,7 @@ Example:
         if(self.progressTimeout >= 0)
           setTimeout(function() {
           self.set(prefix + ".done", true);
+		  self.splice("files", self.files.indexOf(file), 1);
         }, self.progressTimeout);
 
       };
