@@ -251,7 +251,17 @@ Example:
       hideContent : {	
 	    type : Boolean
       },
+
+      /** 
+	    * Set to true to hide the lightDom content of the control. Defaults to false.
+       */	
+      sync : {	
+	    type : Boolean,
+		value : false
+      },
 	},
+	
+	observers : ['uploadFiles(files,files.*)'],
     
     /**
      * Clears the list of files
@@ -295,6 +305,8 @@ Example:
       }.bind(this);
       
       dropZone.ondrop = function(event){
+		var files = [];
+		
         this.toggleClass("hover", false, uploadBorder);
         event.preventDefault();
         var length = event.dataTransfer.files.length;
@@ -303,12 +315,33 @@ Example:
           file.progress = 0;
           file.error = false;
           file.complete = false;
-          this.push("files", file);
-          this.uploadFile(file);
+		  
+		  if(!this.sync)
+			this.push("files", file);
+		  else
+			files.push(file)
         }
+        if(this.sync)
+			this.set("files", files);
+        //this.uploadFiles();
       }.bind(this);
     },
     
+     uploadFiles : function() {
+		var f;
+		
+		if(!this.files.length)
+			return ;
+		
+		f = this.files[this.files.length - 1];
+		if(f.isUploading) 
+			return
+		else
+			f.isUploading = true;
+		
+		this.uploadFile(f, this.uploadFiles.bind(this))
+	},
+	 
     /**
      * Clicks the invisible file input
     */
@@ -385,7 +418,7 @@ Example:
      *
      * @param {object} a file, an element of the files array
     */
-    uploadFile: function(file) {
+    uploadFile: function(file, callback) {
       if(!file){
         return;
       }
@@ -434,7 +467,9 @@ Example:
           self.set(prefix + ".done", true);
 		  self.splice("files", self.files.indexOf(file), 1);
         }, self.progressTimeout);
-
+		
+		if(callback)
+			callback();
       };
       xhr.send(formData);
     }
