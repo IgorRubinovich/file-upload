@@ -360,7 +360,7 @@ Example:
 		//this.uploadFile(this.files[this.files.length - 1], this.uploadFiles.bind(this))
 		this.cancelDebouncer("upload-queue");
 		this.debounce("upload-queue", function() {
-			console.log("To upload:", this.files.map(f => f.name))
+			//console.log("To upload:", this.files.map(f => f.name))
 			this.uploadFile(this.files[this.files.length - 1], this.uploadFiles.bind(this))
 		}, 50);
 	},
