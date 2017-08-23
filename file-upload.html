@@ -253,9 +253,17 @@ Example:
       },
 
       /** 
-	    * Set to true to hide the lightDom content of the control. Defaults to false.
-       */	
+	    * Upload in sequence preserving the order in which the files were added
+       */
       sync : {	
+	    type : Boolean,
+		value : false
+      },
+	  
+      /** 
+	    * no autouploading when file was selected via browser Browse... dialog
+       */
+      noAutoFromBrowse : {
 	    type : Boolean,
 		value : false
       },
@@ -316,10 +324,10 @@ Example:
           file.error = false;
           file.complete = false;
 		  
-		  if(!this.sync)
-			this.push("files", file);
-		  else
-			files.push(file)
+		  // if(!this.sync)
+		  this.push("files", file);
+		  // else
+		  // files.push(file)
         }
         if(this.sync)
 			this.set("files", files);
@@ -328,18 +336,33 @@ Example:
     },
     
      uploadFiles : function() {
-		var f;
+		var index, delta;
 		
-		if(!this.files.length)
+		if(!this.files.length || this._nowUploading)
 			return ;
 		
-		f = this.files[this.files.length - 1];
-		if(f.isUploading) 
-			return
-		else
-			f.isUploading = true;
+		if(this._nowUploading)
+		{
+			index = this.files.indexOf(this._nowUploading);
+			if(index > -1 && index != this.files.length - 1)
+			{
+				delta = this.files.length - 1 - index;
+
+				//var rotateArrBy = (delta, arr) => arr.map((n, i, a) => ); 
+				this.set("files", this.files.map(function(f, i, arr) { return arr[(arr.length - delta + i) % arr.length] })); // rotate .files to preserve the order
+			}
+
+			return;
+		}
 		
-		this.uploadFile(f, this.uploadFiles.bind(this))
+		// f.isUploading = true;
+		
+		//this.uploadFile(this.files[this.files.length - 1], this.uploadFiles.bind(this))
+		this.cancelDebouncer("upload-queue");
+		this.debounce("upload-queue", function() {
+			console.log("To upload:", this.files.map(f => f.name))
+			this.uploadFile(this.files[this.files.length - 1], this.uploadFiles.bind(this))
+		}, 50);
 	},
 	 
     /**
@@ -365,7 +388,9 @@ Example:
         file.error = false;
         file.complete = false;
         this.push("files", file);
-        this.uploadFile(file);
+
+		if(!this.noAutoFromBrowse)
+			this.uploadFile(file);
       }
     },
     
@@ -430,7 +455,7 @@ Example:
 
 	  var that = this;
 	  
-	  console.log('will upload with fields', JSON.stringify(this.fields));
+	  // console.log('will upload with fields', JSON.stringify(this.fields));
 	  
       Object.keys(this.fields).forEach(function(f) {
 		formData.append(f, that.fields[f]);
@@ -440,6 +465,8 @@ Example:
       
       var xhr = file.xhr = new XMLHttpRequest();
       
+	  this._nowUploading = file;
+	  
       xhr.upload.addEventListener('progress', function(e) {
         var done = e.loaded, total = e.total;
         self.set(prefix + ".progress", Math.floor((done/total)*1000)/10);
@@ -452,6 +479,8 @@ Example:
           self.fire('success', {xhr:xhr});
           self.set(prefix + ".complete", true);
 		  console.log(prefix, " is complete");
+		  console.log('done and removing file', self.files.indexOf(file), file);
+		  self.splice("files", self.files.indexOf(file), 1);
         }
         else {
           self.set(prefix + ".error", true);
@@ -465,8 +494,10 @@ Example:
         if(self.progressTimeout >= 0)
           setTimeout(function() {
           self.set(prefix + ".done", true);
-		  self.splice("files", self.files.indexOf(file), 1);
         }, self.progressTimeout);
+		
+		self._lastUploaded = self._nowUploading;
+		delete self._nowUploading;
 		
 		if(callback)
 			callback();
