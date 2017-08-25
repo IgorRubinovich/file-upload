@@ -325,12 +325,12 @@ Example:
           file.complete = false;
 		  
 		  // if(!this.sync)
-		  this.push("files", file);
+		  // this.push("files", file);
 		  // else
-		  // files.push(file)
+		  files.push(file)
         }
-        if(this.sync)
-			this.set("files", files);
+        //if(this.sync)
+		this.set("files", files);
         //this.uploadFiles();
       }.bind(this);
     },
