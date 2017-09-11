@@ -23,7 +23,7 @@ Example:
 
   <style is="custom-style">
     .enabled {
-      border: 1px dashed #555;
+      x-border: 1px dashed #555;
     }
     
     .hover {
@@ -299,7 +299,7 @@ Example:
       var 	uploadBorder = this.$.UploadBorder,
 			dropZone = dropZone || this;
 	  
-      dropZone.toggleClass("enabled", true, uploadBorder);
+      this.toggleClass("enabled", true, uploadBorder);
       
       dropZone.ondragover = function(e) {
         e.stopPropagation();
@@ -465,18 +465,18 @@ Example:
       
       var xhr = file.xhr = new XMLHttpRequest();
       
-	  this._nowUploading = file;
+	  xhr.file = this._nowUploading = file;
 	  
       xhr.upload.addEventListener('progress', function(e) {
         var done = e.loaded, total = e.total;
         self.set(prefix + ".progress", Math.floor((done/total)*1000)/10);
       });
-      
+	  
       var url = this.target.replace("<name>", file.name);
       xhr.open(this.method, url, true);
       xhr.onload = function(e) {
         if(xhr.status === 200) {
-          self.fire('success', {xhr:xhr});
+          self.fire('success', {xhr:xhr, file : file});
           self.set(prefix + ".complete", true);
 		  console.log(prefix, " is complete");
 		  console.log('done and removing file', self.files.indexOf(file), file);
@@ -488,7 +488,8 @@ Example:
           self.set(prefix + ".progress", 100);
 		  		  
           self.updateStyles();
-          self.fire('error', {xhr:xhr});
+          self.fire('error', {xhr:xhr, file : file});
+		  self.splice("files", self.files.indexOf(file), 1);
         }
 		
         if(self.progressTimeout >= 0)
